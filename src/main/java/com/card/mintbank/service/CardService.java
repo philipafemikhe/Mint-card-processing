@@ -2,6 +2,9 @@ package com.card.mintbank.service;
 
 import com.card.mintbank.entity.Card;
 import com.card.mintbank.entity.CardValidity;
+import com.card.mintbank.entity.Country;
+import com.card.mintbank.model.HintCount;
+import com.card.mintbank.model.HintPayload;
 import com.card.mintbank.repository.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -12,6 +15,9 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class CardService {
@@ -29,17 +35,21 @@ public class CardService {
     private CountryRepository countryRepository;
 
     @Autowired
-    private CardNumberRepository cardNumberRepository;
+    private NumberRepository numberRepository;
 
-    public Card getCard(){
+    public Card getCard(String ref){
         try {
             ObjectMapper mapper = new ObjectMapper();
-            Card card = mapper.readValue(new URL("https://lookup.binlist.net/45717360"),Card.class);
+            Card card = mapper.readValue(new URL("https://lookup.binlist.net/" + ref),Card.class);
             System.out.println(card.toString());
-            this.cardRepository.save(card);
-            this.cardNumberRepository.save(card.getNumber());
+            this.numberRepository.save(card.getNumber());
             this.bankRepository.save(card.getBank());
-            this.countryRepository.save(card.getCountry());
+            Country country = processCountry(card);
+            this.countryRepository.save(country);
+            card.setCountry(country);
+            card.setReferenceNo(ref);
+            this.cardRepository.save(card);
+
             System.out.println("Card detail: " + card.toString());
             return card;
         } catch (JsonMappingException e) {
@@ -54,13 +64,26 @@ public class CardService {
         return null;
     }
 
-    public CardValidity verifyCard(int id){
+    private Country processCountry(Card card){
+        Country country = new Country();
+        country.setAlpha2(card.getCountry().getAlpha2());
+        country.setCurrency(card.getCountry().getCurrency());
+        country.setEmoji(card.getCountry().getEmoji());
+        country.setLatitude(card.getCountry().getLatitude());
+        country.setLongitude(card.getCountry().getLongitude());
+        country.setName(card.getCountry().getName());
+        country.setNumeric(card.getCountry().getNumeric());
+        return country;
+    }
+
+    public CardValidity verifyCard(String id){
         CardValidity data = null;
-        Card card = this.cardRepository.findById(id).get();
+        Card card = this.cardRepository.findByReferenceNo(id);
         if(card != null){
             data = new CardValidity();
             data.setCard(card);
             data.setValid(true);
+            card.setHints(card.getHints() + 1);
             return data;
         }
         data.setCard(null);
@@ -68,8 +91,23 @@ public class CardService {
         return data;
     }
 
-    public String cardStatistics(int start, int limit ){
-        return "Card Statistics: start " + start + ", limit " + limit;
+    public HintCount cardStatistics(int start, int limit ){
+        HintCount hintCount = new HintCount();
+        hintCount.setLimit(limit);
+        hintCount.setStart(start);
+        hintCount.setSize(133); // may vary
+        List<Card> cards = this.cardRepository.findAll();
+
+        HintPayload hintPayload = new HintPayload();
+        Map cardMap = new HashMap<>();
+        for(int i=0; i <= 3; i++){
+            if(cards.size() < i +1) break;
+            Card thisCard = cards.get(i);
+            cardMap.put(thisCard.getReferenceNo(),thisCard.getHints());
+//            hintPayload. .setCardNo(cards.get(i).getReferenceNo().toString(), 3);
+        }
+        hintCount.setPayload((List<HintPayload>) cardMap);
+        return hintCount; // "Card Statistics: start " + start + ", limit " + limit;
     }
 
 }
