@@ -28,9 +28,9 @@ public class CardController {
         return cardService.verifyCard(String.valueOf(id));
     }
 
-//    @RequestMapping("/stats?start=1&limit=3")
-    @RequestMapping("/stats{start}/{limit}")
-    public HintCount cardStatistics(@PathVariable int start, @PathVariable int limit){
+    @RequestMapping("/stats")
+    public HintCount cardStatistics(@RequestParam(value = "start") int start, @RequestParam(value = "limit") int limit){
+        System.out.println("Generating statistics with start " + start + " and limit " + limit);
         return cardService.cardStatistics(start, limit);
     }
 

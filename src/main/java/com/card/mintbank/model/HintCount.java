@@ -3,6 +3,7 @@ package com.card.mintbank.model;
 import lombok.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -15,5 +16,5 @@ public class HintCount {
     private int start;
     private int limit;
     private int size;
-    private List<HintPayload> payload;
+    private Map payload;
 }

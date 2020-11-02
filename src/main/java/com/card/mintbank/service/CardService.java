@@ -106,7 +106,7 @@ public class CardService {
             cardMap.put(thisCard.getReferenceNo(),thisCard.getHints());
 //            hintPayload. .setCardNo(cards.get(i).getReferenceNo().toString(), 3);
         }
-        hintCount.setPayload((List<HintPayload>) cardMap);
+        hintCount.setPayload(cardMap);
         return hintCount; // "Card Statistics: start " + start + ", limit " + limit;
     }
 
