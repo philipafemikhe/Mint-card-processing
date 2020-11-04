@@ -3,6 +3,7 @@ package com.card.mintbank.service;
 import com.card.mintbank.entity.Card;
 import com.card.mintbank.entity.CardValidity;
 import com.card.mintbank.entity.Country;
+import com.card.mintbank.entity.KafkaPayload;
 import com.card.mintbank.model.HintCount;
 import com.card.mintbank.model.HintPayload;
 import com.card.mintbank.repository.*;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -37,6 +39,11 @@ public class CardService {
     @Autowired
     private NumberRepository numberRepository;
 
+    @Autowired
+    private KafkaTemplate<String, KafkaPayload> kafkaTemplate;
+
+    public static final String TOPIC = "com.ng.vela.even.card_verified";
+
     public Card getCard(String ref){
         try {
             ObjectMapper mapper = new ObjectMapper();
@@ -49,6 +56,7 @@ public class CardService {
             card.setCountry(country);
             card.setReferenceNo(ref);
             this.cardRepository.save(card);
+            kafkaTemplate.send(TOPIC, new KafkaPayload(card.getScheme(), card.getType(), card.getBank().getName()));
 
             System.out.println("Card detail: " + card.toString());
             return card;
